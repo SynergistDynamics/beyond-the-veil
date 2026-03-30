@@ -1,15 +1,13 @@
-export const config = { runtime: 'edge' };
-
-export default async function handler(req) {
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages } = req.body;
 
     if (!messages || !Array.isArray(messages)) {
-      return new Response(JSON.stringify({ error: 'Invalid request' }), { status: 400 });
+      return res.status(400).json({ error: 'Invalid request' });
     }
 
     const trimmed = messages.slice(-20);
@@ -55,18 +53,15 @@ Keep responses to 3-4 short paragraphs. End with one good question. Write in flo
     if (!response.ok) {
       const err = await response.text();
       console.error('Anthropic error:', err);
-      return new Response(JSON.stringify({ error: 'Upstream error' }), { status: 502 });
+      return res.status(502).json({ error: 'Upstream error' });
     }
 
     const data = await response.json();
     const text = data.content?.find(b => b.type === 'text')?.text || '';
-    return new Response(JSON.stringify({ reply: text }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return res.status(200).json({ reply: text });
 
   } catch (err) {
     console.error('Handler error:', err);
-    return new Response(JSON.stringify({ error: 'Internal error' }), { status: 500 });
+    return res.status(500).json({ error: 'Internal error' });
   }
 }
